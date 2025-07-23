@@ -53,30 +53,7 @@ public class FlutterAmazonpaymentservicesPlugin implements FlutterPlugin, Method
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
         methodChannel = new MethodChannel(binding.getBinaryMessenger(), METHOD_CHANNEL_KEY);
         methodChannel.setMethodCallHandler(this);
-
     }
-
-    public static void registerWith(PluginRegistry.Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), METHOD_CHANNEL_KEY);
-        FlutterAmazonpaymentservicesPlugin handler = new FlutterAmazonpaymentservicesPlugin();
-        handler.methodChannel = channel;
-        activity = registrar.activity();
-        channel.setMethodCallHandler(handler);
-
-        registrar.addActivityResultListener((requestCode, resultCode, data) -> {
-            if (requestCode == PAYFORT_REQUEST_CODE )
-                if(data!=null && resultCode == RESULT_OK)
-                    fortCallback.onActivityResult(requestCode, resultCode, data);
-                else{
-                    Intent intent = new Intent();
-                    intent.putExtra("","");
-                    fortCallback.onActivityResult(requestCode, resultCode, intent);
-                }
-            return true;
-        });
-
-    }
-
 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
@@ -99,51 +76,43 @@ public class FlutterAmazonpaymentservicesPlugin implements FlutterPlugin, Method
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         methodChannel.setMethodCallHandler(null);
+        methodChannel = null;
     }
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         activity = binding.getActivity();
         binding.addActivityResultListener((requestCode, resultCode, data) -> {
-            if (requestCode == PAYFORT_REQUEST_CODE )
-                if(data!=null && resultCode == RESULT_OK)
-                fortCallback.onActivityResult(requestCode, resultCode, data);
-                else{
+            if (requestCode == PAYFORT_REQUEST_CODE) {
+                if (data != null && resultCode == RESULT_OK) {
+                    if (fortCallback != null) {
+                        fortCallback.onActivityResult(requestCode, resultCode, data);
+                    }
+                } else {
                     Intent intent = new Intent();
-                    intent.putExtra("","");
-                    fortCallback.onActivityResult(requestCode, resultCode, intent);
+                    intent.putExtra("", "");
+                    if (fortCallback != null) {
+                        fortCallback.onActivityResult(requestCode, resultCode, intent);
+                    }
                 }
-                return true;
-            });
-
-    }
-
-    @Override
-    public void onDetachedFromActivityForConfigChanges() {
-        methodChannel.setMethodCallHandler(null);
-    }
-
-    @Override
-    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-        activity = binding.getActivity();
-        binding.addActivityResultListener((requestCode, resultCode, data) -> {
-            if (requestCode == PAYFORT_REQUEST_CODE )
-                if(data!=null && resultCode == RESULT_OK)
-                    fortCallback.onActivityResult(requestCode, resultCode, data);
-                else{
-                    Intent intent = new Intent();
-                    intent.putExtra("","");
-                    fortCallback.onActivityResult(requestCode, resultCode, intent);
-                }
+            }
             return true;
         });
-
     }
 
     @Override
     public void onDetachedFromActivity() {
-        activity = null;
+        // Clean up if needed
+    }
 
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        onAttachedToActivity(binding);
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        onDetachedFromActivity();
     }
 
     private void handleValidateAPI(MethodCall call, Result result) {
